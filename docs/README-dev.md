@@ -27,6 +27,12 @@ Please see the [config](../.blackbit/bb.yaml) for aliases you can run on your lo
     - [Areabricks](README-dev.md#div-idareabricksareabricksdiv)
     - [Fonts](README-dev.md#div-idfontsfontsdiv)
     - [Custom Views](README-dev.md#div-idcustom-viewscustom-viewsdiv)
+  - [Custom data in FE](README-dev.md#div-idcustom-datacustom-data-in-fediv)
+    - [Strategy](README-dev.md#div-idstrategystrategydiv)
+    - [Create a custom calculator](README-dev.md#div-idcalculatorcreate-a-custom-calculatordiv)
+    - [Custom calculator in the class](README-dev.md#div-idcalculator-configcustom-calculator-in-the-classdiv)
+    - [Data extractor configuration](README-dev.md#div-iddata-extractor-configdata-extractor-configurationdiv)
+    - [Frontend output](README-dev.md#div-idfrontend-outputfrontend-outputdiv)
 
 ---
 
@@ -191,6 +197,7 @@ class Test extends AbstractAreabrick
 ```
 
 ### <div id="fonts">Fonts</div>
+// Todo!
 
 ### <div id="custom-views">Custom Views</div>
 The Blackbit Visual Page Builder provides some custom views within the Pimcore Admin Interface,<br>
@@ -226,5 +233,98 @@ blackbit_visual_page_builder:
     custom_views:
         enabledForPerspectives:
             - content_marketing # <-- this is the perspective key
-
 ```
+
+
+## <div id="custom-data">Custom data in FE</div>
+As the data extractor in its first version only allows for simple (flat) fields, you can use Pimcore's calculated value for bridging the gap to complex data and relations. \
+Following examples shows how to extract category data for a blog entry.
+
+It is of course possible to return not just a string but complex HTML to be shown raw or json to be fetched by some separate JS snippet.
+
+### <div id="strategy">Strategy</div>
+1. Create a calculated value Field in Pimcore for required class
+2. Create and link the custom calculator
+3. Add required field to the extractor configuration
+4. Check it out in the frontend
+
+### <div id="calculator">Create a custom calculator</div>
+Following example pulls out of `BlogEntry` entities the `Category` and concatenates the localized names.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace App\Calculator;
+
+use Pimcore\Model\DataObject\BlogEntry;
+use Pimcore\Model\DataObject\ClassDefinition\CalculatorClassInterface;
+use Pimcore\Model\DataObject\Concrete;
+use Pimcore\Model\DataObject\Data\CalculatedValue;
+use Symfony\Component\HttpFoundation\RequestStack;
+
+readonly class BlogEntryCategoryCalculator implements CalculatorClassInterface
+{
+    public function __construct(
+        private RequestStack $requestStack,
+    ) {
+    }
+
+    private const WRONG_CLASS_MESSAGE = 'The class "%s" is not valid. Only BlogEntry objects are allowed.';
+
+    public function compute(Concrete $object, CalculatedValue $context): string
+    {
+        if (! $object instanceof BlogEntry) {
+            return sprintf(
+                self::WRONG_CLASS_MESSAGE,
+                get_class($object)
+            );
+        }
+
+        $locale = $this->requestStack->getMainRequest()?->getLocale();
+
+        $categories = $object->getCategories();
+        $returnString = '';
+        foreach ($categories as $category) {
+            if (empty($returnString)) {
+                $returnString = $category->getName($locale);
+            } else {
+                $returnString = sprintf(
+                    '%s, %s',
+                    $returnString,
+                    $category->getName($locale)
+                );
+            }
+        }
+
+        return $returnString;
+    }
+
+    public function getCalculatedValueForEditMode(Concrete $object, CalculatedValue $context): string
+    {
+        return $this->compute($object, $context);
+    }
+}
+```
+
+Add the class to the `config/services.yaml`:
+```yaml
+services:
+    App\Calculator\BlogEntryCategoryCalculator:
+        class: App\Calculator\BlogEntryCategoryCalculator
+        public: true
+```
+
+### <div id="calculator-config">Custom calculator in the class</div>
+This is just the standard Pimcore configuration for the class definition.
+![img.png](images/dev/calculator.png)
+
+### <div id="data-extractor-config">Data extractor configuration</div>
+The order of the fields is important as those are being put onto the page in the same order. \
+(Configuration of the data extractor on the document)
+![img.png](images/dev/extractor-config-fields.png)
+
+### <div id="frontend-output">Frontend output</div>
+The raw output without additional styling (see custom CSS)
+![img.png](images/dev/output-extractor.png)
