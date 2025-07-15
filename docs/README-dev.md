@@ -33,15 +33,16 @@ Please see the [config](../.blackbit/bb.yaml) for aliases you can run on your lo
     - [Custom calculator in the class](README-dev.md#div-idcalculator-configcustom-calculator-in-the-classdiv)
     - [Data extractor configuration](README-dev.md#div-iddata-extractor-configdata-extractor-configurationdiv)
     - [Frontend output](README-dev.md#div-idfrontend-outputfrontend-outputdiv)
+  - [Template extension](README-dev.md#div-idtemplate-extensiontemplate-extensiondiv)
 
 ---
 
 ## <div id="general-setup">General setup</div>
-### <div id="first-start">First start</div> 
+### <div id="first-start">First start</div>
 
 Run `bb install-project` to initialize the database and installation of the bundle with an empty pimcore (skeleton) instance.
 
-### <div id="subsequent-start">Subsequent start</div> 
+### <div id="subsequent-start">Subsequent start</div>
 
 Use the `bb` CLI tool to run this application locally.
 
@@ -201,7 +202,7 @@ class Test extends AbstractAreabrick
 
 ### <div id="custom-views">Custom Views</div>
 The Blackbit Visual Page Builder provides some custom views within the Pimcore Admin Interface,<br>
-which simplifies the handling of the Visual Page Builder documents. 
+which simplifies the handling of the Visual Page Builder documents.
 
 <img src="images/user/feature-custom-views-admin-ui.png" alt="Custom Views of Blackbit Visual Page Builder" width="1280">
 
@@ -328,3 +329,27 @@ The order of the fields is important as those are being put onto the page in the
 ### <div id="frontend-output">Frontend output</div>
 The raw output without additional styling (see custom CSS)
 ![img.png](images/dev/output-extractor.png)
+
+## <div id="template-extension">Template extension</div>
+As the Visual Page Builder is based on ordinary twig templates, you can extend it.
+
+For example, use the default layout and populate the content block with your own content:
+
+```twig
+{% extends '@visual_page_builder/layout/layout.html.twig' %}
+
+{% block content %}
+
+    <div class="my-content">
+        ...
+    </div>
+
+{% endblock %}
+```
+
+This does allow you to use all functions of the Visual Page Builder, such as the footer and header which you already defined.
+
+**Example use cases:**
+- Custom pages based on symfony routes (like team details, blog detail pages or other based on data objects)
+- Landingpages with custom content
+- Change template for a specific document type
